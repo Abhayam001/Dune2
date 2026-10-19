@@ -43,7 +43,7 @@ let () =
   Printf.printf "     MULTICORE OCAML 5.x 1,000-BOT COGNITIVE SWARM DASHBOARD \n%!";
   Printf.printf "============================================================\n%!";
   let num_domains = min 8 (Domain.recommended_domain_count ()) in
-  let pool = Task.setup_pool ~num_additional_domains:(num_domains - 1) () in
+    let pool = Task.setup_pool ~num_domains:(max 1 (num_domains - 1)) in
   let swarm = init_swarm () in
   Printf.printf "[SETUP] Instantiated %d parallel bot brains across %d CPU Domains.\n%!" num_bots num_domains;
 
