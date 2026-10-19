@@ -20,14 +20,14 @@ jobs:
 
   ocaml-check:
     runs-on: ubuntu-latest
+    container:
+      image: ocaml/opam:ubuntu-24.04-ocaml-5.2
     steps:
       - uses: actions/checkout@v4
-      - name: Set up OCaml 5.x
-        uses: ocaml/setup-ocaml@v2
-        with:
-          ocaml-compiler: "5.2.0"
       - name: Build OCaml swarm
         run: |
-          cd ocaml-brain
+          sudo chown -R opam:opam .
           opam install -y dune domainslib
+          cd ocaml-brain
+          eval $(opam env)
           dune build
