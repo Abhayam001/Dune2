@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Autonomous Quant Swarm - $1.0 Billion Multi-Market Mission Control</title>
+  <title>Autonomous Quant Swarm - Supreme Overseer & 1,000-Bot Brain</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Chart.js CDN -->
@@ -32,9 +32,11 @@
   <!-- Top Navigation Bar -->
   <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50 px-6 py-3.5 flex justify-between items-center">
     <div class="flex items-center space-x-3">
-      <div class="w-3 h-3 rounded-full bg-emerald-500 animate-ping"></div>
-      <span class="font-extrabold tracking-wider text-lg text-emerald-400">GLOBAL MULTI-ASSET QUANT SWARM</span>
-      <span class="text-xs bg-slate-800 text-slate-300 px-2.5 py-0.5 rounded border border-slate-700 font-mono">1,000 Bots x $1,000,000.00 Capital</span>
+      <div class="w-3.5 h-3.5 rounded-full bg-purple-500 animate-pulse"></div>
+      <div>
+        <span class="font-extrabold tracking-wider text-lg text-slate-100">SUPREME OVERSEER BRAIN</span>
+        <span class="text-xs text-purple-400 font-mono ml-2 border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 rounded">Hierarchical Swarm Meta-Learner</span>
+      </div>
     </div>
     <div class="flex items-center space-x-4 text-sm">
       <div class="flex items-center space-x-2">
@@ -43,7 +45,7 @@
       </div>
       <button onclick="resetBrainState()" class="px-2.5 py-1 text-xs bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded transition font-medium flex items-center space-x-1">
         <i class="fa-solid fa-rotate-left"></i>
-        <span>Reset Swarm</span>
+        <span>Reset Swarm Memory</span>
       </button>
       <div id="live-clock" class="font-mono text-slate-400 text-xs hidden md:block"></div>
     </div>
@@ -51,6 +53,63 @@
 
   <!-- Main Content Dashboard -->
   <main class="max-w-7xl mx-auto p-6 space-y-6">
+
+    <!-- Meta-Overseer Supreme Brain Command Banner -->
+    <section class="bg-gradient-to-r from-purple-950/50 via-slate-900/80 to-slate-900/60 border border-purple-500/30 rounded-2xl p-5 shadow-2xl space-y-4">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-purple-500/20 pb-4">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-300">
+            <i class="fa-solid fa-eye text-lg"></i>
+          </div>
+          <div>
+            <h1 class="text-base font-black text-slate-100 flex items-center space-x-2">
+              <span>Overseer Meta-Intelligence Core</span>
+              <span class="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded font-mono">Learning from 1,000 Bots</span>
+            </h1>
+            <p class="text-xs text-slate-400">Observes every trade, maintains macro-experience across 5 markets, and tunes reward & punishment policy in real-time.</p>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-6 text-xs font-mono">
+          <div>
+            <span class="text-slate-400 block text-[10px]">TOTAL LESSONS LEARNED</span>
+            <span id="overseer-lessons" class="text-base font-bold text-purple-400">0 Lessons</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[10px]">PUNISHMENT SEVERITY</span>
+            <span id="overseer-punish" class="text-base font-bold text-rose-400">1.00x</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[10px]">REWARD GENEROSITY</span>
+            <span id="overseer-reward" class="text-base font-bold text-emerald-400">1.00x</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Overseer Market Allocation Matrix -->
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3 pt-1 text-xs font-mono">
+        <div class="bg-slate-950/80 p-2.5 rounded-lg border border-slate-800">
+          <div class="text-slate-400 flex justify-between"><span>Crypto Bias:</span><span id="bias-crypto" class="text-emerald-400 font-bold">1.00x</span></div>
+          <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden"><div id="bar-crypto" class="bg-emerald-500 h-full w-1/2"></div></div>
+        </div>
+        <div class="bg-slate-950/80 p-2.5 rounded-lg border border-slate-800">
+          <div class="text-slate-400 flex justify-between"><span>US Stocks:</span><span id="bias-us" class="text-emerald-400 font-bold">1.00x</span></div>
+          <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden"><div id="bar-us" class="bg-blue-500 h-full w-1/2"></div></div>
+        </div>
+        <div class="bg-slate-950/80 p-2.5 rounded-lg border border-slate-800">
+          <div class="text-slate-400 flex justify-between"><span>Indian NSE:</span><span id="bias-nse" class="text-emerald-400 font-bold">1.00x</span></div>
+          <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden"><div id="bar-nse" class="bg-amber-500 h-full w-1/2"></div></div>
+        </div>
+        <div class="bg-slate-950/80 p-2.5 rounded-lg border border-slate-800">
+          <div class="text-slate-400 flex justify-between"><span>Forex:</span><span id="bias-fx" class="text-emerald-400 font-bold">1.00x</span></div>
+          <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden"><div id="bar-fx" class="bg-purple-500 h-full w-1/2"></div></div>
+        </div>
+        <div class="bg-slate-950/80 p-2.5 rounded-lg border border-slate-800 col-span-2 md:col-span-1">
+          <div class="text-slate-400 flex justify-between"><span>Money Mkt:</span><span id="bias-mm" class="text-emerald-400 font-bold">1.00x</span></div>
+          <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden"><div id="bar-mm" class="bg-cyan-500 h-full w-1/2"></div></div>
+        </div>
+      </div>
+    </section>
 
     <!-- Metrics Header Row -->
     <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -175,7 +234,7 @@
   </main>
 
   <script>
-    const STORAGE_KEY = 'QUANT_SWARM_BILLION_DOLLAR_STATE_V2';
+    const STORAGE_KEY = 'QUANT_SWARM_OVERSEER_V1';
     const totalBots = 1000;
     const markets = ['Crypto', 'US Stocks', 'Indian NSE', 'Forex', 'Money Market'];
     const riskStyles = ['Ultra-Safe', 'Balanced', 'Aggressive Degen'];
@@ -191,6 +250,12 @@
       return {
         totalTicks: 0,
         totalTrades: 0,
+        overseer: {
+          lessonsLearned: 0,
+          punishmentSeverity: 1.0,
+          rewardGenerosity: 1.0,
+          marketWeights: [1.0, 1.0, 1.0, 1.0, 1.0]
+        },
         bots: Array.from({ length: totalBots }, (_, i) => {
           const style = riskStyles[(Math.floor(i / 5)) % 3];
           const initialLev = style === 'Ultra-Safe' ? 1.0 : (style === 'Balanced' ? 2.5 : 5.0);
@@ -218,7 +283,7 @@
     }
 
     function resetBrainState() {
-      if (confirm("Reset all 1,000 bots back to $1,000,000.00 initial capital?")) {
+      if (confirm("Reset Supreme Overseer Brain and all 1,000 bots back to initial state?")) {
         localStorage.removeItem(STORAGE_KEY);
         location.reload();
       }
@@ -293,7 +358,7 @@
     state.executionLog.forEach(item => renderLogEntry(item, false));
     selectBot(0);
 
-    // 3. Robust Live Ingestion: WebSocket with HTTP Fallback Polling
+    // 3. Robust Live Ingestion: WebSocket with Synthetic Fallback
     let btcPrice = 65420.0;
     let priorPrice = 65420.0;
     let isConnected = false;
@@ -315,17 +380,10 @@
         processTick(price, bid, ask);
       };
 
-      ws.onerror = (e) => {
-        console.warn('WebSocket error, switching to synthetic price fluctuations', e);
-        startSyntheticFeed();
-      };
-
-      ws.onclose = () => {
-        if (!isConnected) startSyntheticFeed();
-      };
+      ws.onerror = () => startSyntheticFeed();
+      ws.onclose = () => { if (!isConnected) startSyntheticFeed(); };
     }
 
-    // In case WebSocket is blocked by ISP or browser extensions
     function startSyntheticFeed() {
       document.getElementById('stream-status').textContent = 'LIVE FEED (ACTIVE)';
       document.getElementById('stream-status').className = 'px-2 py-0.5 rounded text-xs bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-medium';
@@ -351,24 +409,28 @@
       priorPrice = price;
     }
 
-    // 4. Autonomous Swarm Multi-Market Execution & Trading Function
+    // 4. Autonomous Swarm Multi-Market Execution & Overseer Learning Function
     function updateSwarm(price, bid, ask) {
       const priceDelta = priorPrice > 0 ? (price - priorPrice) : 0.0;
       let totalSwarmAUM = 0.0;
       let topBot = state.bots[0];
+      const marketProfits = [0, 0, 0, 0, 0];
 
-      // Randomly pick a cohort of bots to trade each tick (high-activity market simulation)
       for (let i = 0; i < totalBots; i++) {
         const bot = state.bots[i];
+        const mIdx = markets.indexOf(bot.market);
 
-        // Autonomous RL Learning & Reward Loop on every price tick
+        // Overseer Meta-Modulation applied to individual bot
+        const overseerMultiplier = state.overseer.marketWeights[mIdx];
+
         if (priceDelta !== 0) {
-          const conviction = Math.abs(bot.weight);
+          const conviction = Math.abs(bot.weight) * overseerMultiplier;
           const threshold = bot.riskStyle === 'Ultra-Safe' ? 0.18 : (bot.riskStyle === 'Balanced' ? 0.08 : 0.02);
 
-          // Trigger trade when price moves and conviction matches threshold
-          if (conviction > threshold && Math.random() < 0.08) {
+          if (conviction > threshold && Math.random() < 0.10) {
             bot.trades++;
+            state.overseer.lessonsLearned++;
+            
             const riskRatio = bot.riskStyle === 'Ultra-Safe' ? 0.01 : (bot.riskStyle === 'Balanced' ? 0.05 : 0.15);
             const tradeSize = bot.capital * riskRatio * bot.leverage;
             const direction = bot.weight > 0 ? 1 : -1;
@@ -376,22 +438,24 @@
 
             bot.capital = Math.max(10000.0, bot.capital + pnl);
             bot.profit += pnl;
+            marketProfits[mIdx] += pnl;
 
-            // REWARD: More profit = higher leverage + reinforced synaptic weight
+            // OVERSEER GOVERNED REWARD & PUNISHMENT:
             if (pnl > 0) {
               bot.wins++;
-              bot.leverage = Math.min(10.0, bot.leverage * 1.01);
-              bot.weight += 0.005 * conviction;
+              const rewardBonus = state.overseer.rewardGenerosity;
+              bot.leverage = Math.min(10.0, bot.leverage * (1.0 + 0.01 * rewardBonus));
+              bot.weight += 0.005 * conviction * rewardBonus;
             } else {
               bot.losses++;
-              bot.leverage = Math.max(1.0, bot.leverage * 0.98);
-              bot.weight -= 0.005 * conviction;
+              const punishPenalty = state.overseer.punishmentSeverity;
+              bot.leverage = Math.max(1.0, bot.leverage * (1.0 - 0.02 * punishPenalty));
+              bot.weight -= 0.005 * conviction * punishPenalty;
             }
 
-            // Market Migration: If losing in current market, switch to another market
+            // Market Migration
             if (bot.losses - bot.wins >= 5 && bot.profit < 0) {
-              const curIdx = markets.indexOf(bot.market);
-              bot.market = markets[(curIdx + 1) % markets.length];
+              bot.market = markets[(mIdx + 1) % markets.length];
             }
 
             // Stream into Execution Ledger
@@ -420,17 +484,47 @@
         }
       }
 
+      // OVERSEER LEARNS FROM ALL 1,000 BOTS COLLECTIVELY
+      const totalSwarmPnl = totalSwarmAUM - 1000000000.0;
+      if (totalSwarmPnl < 0) {
+        state.overseer.punishmentSeverity = Math.min(3.0, state.overseer.punishmentSeverity * 1.002);
+        state.overseer.rewardGenerosity = Math.max(0.5, state.overseer.rewardGenerosity * 0.998);
+      } else {
+        state.overseer.punishmentSeverity = Math.max(0.7, state.overseer.punishmentSeverity * 0.999);
+        state.overseer.rewardGenerosity = Math.min(2.5, state.overseer.rewardGenerosity * 1.001);
+      }
+
+      // Update Overseer Market Allocations
+      for (let m = 0; m < 5; m++) {
+        if (marketProfits[m] < 0) {
+          state.overseer.marketWeights[m] = Math.max(0.4, state.overseer.marketWeights[m] * 0.99);
+        } else if (marketProfits[m] > 0) {
+          state.overseer.marketWeights[m] = Math.min(2.0, state.overseer.marketWeights[m] * 1.01);
+        }
+      }
+
+      // Update Overseer UI Displays
+      document.getElementById('overseer-lessons').textContent = `${state.overseer.lessonsLearned.toLocaleString()} Lessons`;
+      document.getElementById('overseer-punish').textContent = `${state.overseer.punishmentSeverity.toFixed(2)}x`;
+      document.getElementById('overseer-reward').textContent = `${state.overseer.rewardGenerosity.toFixed(2)}x`;
+
+      const mKeys = ['crypto', 'us', 'nse', 'fx', 'mm'];
+      mKeys.forEach((key, idx) => {
+        const w = state.overseer.marketWeights[idx];
+        document.getElementById(`bias-${key}`).textContent = `${w.toFixed(2)}x`;
+        document.getElementById(`bar-${key}`).style.width = `${Math.min(100, Math.max(10, w * 50))}%`;
+      });
+
       // Refresh inspector if current selected bot was updated
       selectBot(selectedBotId);
 
       // Update Swarm AUM & Top Bot Displays
       document.getElementById('swarm-aum').textContent = `$${totalSwarmAUM.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-      const totalNetPnl = totalSwarmAUM - 1000000000.0;
-      const netPct = (totalNetPnl / 1000000000.0) * 100.0;
+      const netPct = (totalSwarmPnl / 1000000000.0) * 100.0;
 
       const pnlEl = document.getElementById('swarm-pnl');
-      pnlEl.innerHTML = `<i class="fa-solid fa-arrow-trend-up"></i><span>${totalNetPnl >= 0 ? '+' : ''}$${totalNetPnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${netPct.toFixed(3)}%)</span>`;
-      pnlEl.className = totalNetPnl >= 0 ? 'text-xs text-emerald-400 mt-1 font-semibold flex items-center space-x-1' : 'text-xs text-rose-400 mt-1 font-semibold flex items-center space-x-1';
+      pnlEl.innerHTML = `<i class="fa-solid fa-arrow-trend-up"></i><span>${totalSwarmPnl >= 0 ? '+' : ''}$${totalSwarmPnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${netPct.toFixed(3)}%)</span>`;
+      pnlEl.className = totalSwarmPnl >= 0 ? 'text-xs text-emerald-400 mt-1 font-semibold flex items-center space-x-1' : 'text-xs text-rose-400 mt-1 font-semibold flex items-center space-x-1';
 
       document.getElementById('top-bot-capital').textContent = `$${topBot.capital.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       document.getElementById('top-bot-info').innerHTML = `Bot #${String(topBot.id).padStart(3, '0')} | <span class="text-emerald-400 font-bold">${topBot.market}</span> (${topBot.leverage.toFixed(1)}x Lev, ${topBot.riskStyle})`;

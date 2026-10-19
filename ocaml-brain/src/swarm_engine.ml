@@ -30,11 +30,11 @@ type bot_state = {
   id : int;
   mutable target_market : market_type;
   mutable risk_style : risk_persona;
-  mutable capital : float;                (* Starts with $1,000,000.00 *)
+  mutable capital : float;
   mutable initial_capital : float;
-  mutable leverage : float;               (* Dynamically adjusted based on confidence & risk style *)
+  mutable leverage : float;
   mutable alpha_score : float;
-  mutable weights : float array;          (* 16-dimensional synaptic policy *)
+  mutable weights : float array;
   mutable learning_rate : float;
   mutable lifetime_profit : float;
   mutable total_trades : int;
@@ -43,10 +43,33 @@ type bot_state = {
   mutable quarantined : bool;
 }
 
+(* The Meta-Overseer Supreme Brain:
+   Maintains macro-experience, cross-market memory, error pattern ledger,
+   and dynamic reward/punishment policy learned from observing all 1,000 bots. *)
+type meta_overseer_memory = {
+  mutable total_inspections : int;
+  mutable aggregate_lessons_learned : int;
+  mutable market_regime_weights : float array; (* Memory weights for [Crypto; US; NSE; FX; MM] *)
+  mutable punishment_severity : float;        (* Dynamically tightened when swarm loses money *)
+  mutable reward_generosity : float;          (* Scaled up when swarm hits high win streaks *)
+  mutable systemic_drawdown_memory : float;   (* Retains memory of worst macro tail-risks *)
+  mutable most_effective_strategy : string;
+}
+
 let num_bots = 1000
 let vector_dim = 16
 
-(* Randomly assign market specializations & risk appetites on instantiation *)
+let init_overseer () : meta_overseer_memory =
+  {
+    total_inspections = 0;
+    aggregate_lessons_learned = 0;
+    market_regime_weights = [| 1.0; 1.0; 1.0; 1.0; 1.0 |];
+    punishment_severity = 1.0;
+    reward_generosity = 1.0;
+    systemic_drawdown_memory = 0.0;
+    most_effective_strategy = "Ultra-Safe Mean Reversion";
+  }
+
 let init_swarm () : bot_state array =
   Random.self_init ();
   Array.init num_bots (fun i ->
@@ -84,8 +107,7 @@ let init_swarm () : bot_state array =
       quarantined = false;
     })
 
-(* Forward Pass: Evaluate market micro-signals into alpha score *)
-let evaluate_strategy (bot: bot_state) (bid: float) (ask: float) (vol: float) : float =
+let evaluate_strategy (bot: bot_state) (overseer: meta_overseer_memory) (bid: float) (ask: float) (vol: float) : float =
   let mid = (bid +. ask) /. 2.0 in
   let spread = ask -. bid in
   
@@ -104,35 +126,83 @@ let evaluate_strategy (bot: bot_state) (bid: float) (ask: float) (vol: float) : 
     dot := !dot +. (state.(d) *. bot.weights.(d))
   done;
 
-  (* Risk Scaling: Aggressive bots amplify signal, Safe bots dampen volatility *)
-  let multiplier = match bot.risk_style with
+  let style_mult = match bot.risk_style with
     | Ultra_Safe -> 0.4
     | Balanced -> 1.0
     | Aggressive_Degen -> 2.2
   in
-  !dot *. multiplier
 
-(* Reinforcement Learning & Capital Reward Function:
-   The more profit the bot makes, the more capital bonus & leverage reward it receives *)
-let execute_and_reward (bot: bot_state) (price_delta: float) : unit =
+  (* Overseer Meta-Modulation:
+     The Overseer applies learned macro weights from its memory to throttle or boost each market *)
+  let market_idx = match bot.target_market with
+    | Crypto -> 0 | US_Equities -> 1 | Indian_NSE -> 2 | Forex -> 3 | Money_Market -> 4
+  in
+  let macro_multiplier = overseer.market_regime_weights.(market_idx) in
+
+  !dot *. style_mult *. macro_multiplier
+
+(* Overseer Meta-Learning Step:
+   Observes all 1,000 bots, measures collective win/loss rates, identifies market flaws,
+   and adjusts punishment/reward policies from collective lessons *)
+let overseer_audit_and_learn (overseer: meta_overseer_memory) (swarm: bot_state array) : unit =
+  overseer.total_inspections <- overseer.total_inspections + 1;
+  
+  let total_profit = ref 0.0 in
+  let win_sum = ref 0 in
+  let loss_sum = ref 0 in
+  let market_pnl = Array.make 5 0.0 in
+
+  Array.iter (fun b ->
+    total_profit := !total_profit +. b.lifetime_profit;
+    win_sum := !win_sum + b.win_count;
+    loss_sum := !loss_sum + (b.total_trades - b.win_count);
+    let m_idx = match b.target_market with
+      | Crypto -> 0 | US_Equities -> 1 | Indian_NSE -> 2 | Forex -> 3 | Money_Market -> 4
+    in
+    market_pnl.(m_idx) <- market_pnl.(m_idx) +. b.lifetime_profit
+  ) swarm;
+
+  let total_decisions = !win_sum + !loss_sum in
+  overseer.aggregate_lessons_learned <- overseer.aggregate_lessons_learned + total_decisions;
+
+  (* Lesson 1: Market Allocation Adaptation.
+     If a market is causing net losses across all its bots, Overseer dampens that market's signal *)
+  for m = 0 to 4 do
+    if market_pnl.(m) < 0.0 then
+      overseer.market_regime_weights.(m) <- max 0.3 (overseer.market_regime_weights.(m) *. 0.96)
+    else if market_pnl.(m) > 0.0 then
+      overseer.market_regime_weights.(m) <- min 2.0 (overseer.market_regime_weights.(m) *. 1.04)
+  done;
+
+  (* Lesson 2: Punishment & Reward Policy Tuning.
+     If the swarm is bleeding capital, the Overseer ramps up punishment severity.
+     If the swarm is generating strong alpha, Overseer increases reward generosity. *)
+  if !total_profit < 0.0 then begin
+    overseer.punishment_severity <- min 3.0 (overseer.punishment_severity *. 1.05);
+    overseer.reward_generosity <- max 0.5 (overseer.reward_generosity *. 0.95);
+    overseer.systemic_drawdown_memory <- min (!total_profit) overseer.systemic_drawdown_memory
+  end else begin
+    overseer.punishment_severity <- max 0.7 (overseer.punishment_severity *. 0.98);
+    overseer.reward_generosity <- min 2.5 (overseer.reward_generosity *. 1.02)
+  end
+
+(* Individual Bot Execution:
+   Punishment and Reward multipliers are directly governed by the Overseer's learned policy *)
+let execute_and_reward (bot: bot_state) (overseer: meta_overseer_memory) (price_delta: float) : unit =
   if not bot.quarantined then begin
     let conviction = abs_float bot.alpha_score in
-    
-    (* Dynamically decide whether to risk capital *)
     let threshold = match bot.risk_style with
-      | Ultra_Safe -> 0.18        (* Only trades high-certainty set ups *)
+      | Ultra_Safe -> 0.18
       | Balanced -> 0.08
-      | Aggressive_Degen -> 0.03  (* High-frequency risk taker *)
+      | Aggressive_Degen -> 0.03
     in
 
     if conviction > threshold then begin
       bot.total_trades <- bot.total_trades + 1;
-      
-      (* Position sizing governed by capital and risk style *)
       let risk_pct = match bot.risk_style with
-        | Ultra_Safe -> 0.01        (* 1% capital per trade *)
-        | Balanced -> 0.05          (* 5% capital *)
-        | Aggressive_Degen -> 0.20  (* 20% capital *)
+        | Ultra_Safe -> 0.01
+        | Balanced -> 0.05
+        | Aggressive_Degen -> 0.20
       in
 
       let position_size = bot.capital *. risk_pct *. bot.leverage in
@@ -142,27 +212,24 @@ let execute_and_reward (bot: bot_state) (price_delta: float) : unit =
       bot.capital <- max 10_000.0 (bot.capital +. trade_pnl);
       bot.lifetime_profit <- bot.lifetime_profit +. trade_pnl;
 
-      (* REINFORCEMENT LEARNING REWARD:
-         Winning bots get scaled learning rewards and leverage bonus.
-         Losing bots get penalised and de-leveraged. *)
+      (* OVERSEER GOVERNED REWARD & PUNISHMENT:
+         The Overseer's learned parameters modulate the magnitude of reinforcement! *)
       if trade_pnl > 0.0 then begin
         bot.win_count <- bot.win_count + 1;
-        (* Reward Bonus: Increase leverage cap & reward multiplier *)
-        bot.leverage <- min 10.0 (bot.leverage *. 1.02);
+        let bonus = overseer.reward_generosity in
+        bot.leverage <- min 10.0 (bot.leverage *. (1.0 +. (0.02 *. bonus)));
         for d = 0 to vector_dim - 1 do
-          bot.weights.(d) <- bot.weights.(d) +. (bot.learning_rate *. conviction *. 1.5)
+          bot.weights.(d) <- bot.weights.(d) +. (bot.learning_rate *. conviction *. 1.5 *. bonus)
         done
       end else begin
-        (* Penalty: Reduce leverage & adapt weights *)
-        bot.leverage <- max 1.0 (bot.leverage *. 0.95);
+        let penalty = overseer.punishment_severity in
+        bot.leverage <- max 1.0 (bot.leverage *. (1.0 -. (0.05 *. penalty)));
         for d = 0 to vector_dim - 1 do
-          bot.weights.(d) <- bot.weights.(d) -. (bot.learning_rate *. conviction *. 1.2)
+          bot.weights.(d) <- bot.weights.(d) -. (bot.learning_rate *. conviction *. 1.2 *. penalty)
         done
       end;
 
-      (* Market Migration:
-         If a bot has lost money 5 times in its current market, it can autonomously
-         switch to another market to hunt for better alpha *)
+      (* Market Migration *)
       if (bot.total_trades - bot.win_count) >= 6 && bot.lifetime_profit < 0.0 then begin
         bot.target_market <- match bot.target_market with
           | Crypto -> US_Equities
@@ -174,30 +241,31 @@ let execute_and_reward (bot: bot_state) (price_delta: float) : unit =
     end
   end
 
-let step_swarm (pool: Task.pool) (swarm: bot_state array) (bid: float) (ask: float) (vol: float) (prior_mid: float) : unit =
+let step_swarm (pool: Task.pool) (swarm: bot_state array) (overseer: meta_overseer_memory) (bid: float) (ask: float) (vol: float) (prior_mid: float) : unit =
   let current_mid = (bid +. ask) /. 2.0 in
   let price_delta = current_mid -. prior_mid in
 
   Task.parallel_for pool ~start:0 ~finish:(num_bots - 1) ~body:(fun i ->
     let bot = swarm.(i) in
     if prior_mid > 0.0 then
-      execute_and_reward bot price_delta;
-    bot.alpha_score <- evaluate_strategy bot bid ask vol
+      execute_and_reward bot overseer price_delta;
+    bot.alpha_score <- evaluate_strategy bot overseer bid ask vol
   )
 
 let () =
   Printf.printf "\n========================================================================\n%!";
-  Printf.printf " MULTICORE OCAML 5.x MULTI-ASSET CAPITAL SWARM (1,000 x $1,000,000 BOTS) \n%!";
+  Printf.printf " MULTICORE OCAML 5.x HIERARCHICAL SWARM: OVERSEER BRAIN + 1,000 BOT CORES \n%!";
   Printf.printf "========================================================================\n%!";
   let num_domains = min 8 (Domain.recommended_domain_count ()) in
   let pool = Task.setup_pool ~num_domains:(max 1 (num_domains - 1)) in
   let swarm = init_swarm () in
+  let overseer = init_overseer () in
 
   let total_swarm_capital = float_of_int num_bots *. 1_000_000.0 in
-  Printf.printf "[SETUP] Initialized 1,000 Individual Bots across %d Parallel Domains.\n%!" num_domains;
-  Printf.printf "[CAPITAL] Total Swarm AUM: $%.2f ($1.00 Billion Simulated Capital).\n%!" total_swarm_capital;
-  Printf.printf "[MARKETS] Crypto, US Equities, Indian NSE, Forex, Money Market.\n%!";
-  Printf.printf "[RISK] Ultra-Safe (1x), Balanced (2.5x), High-Risk Aggressive (5x-10x).\n\n%!";
+  Printf.printf "[SETUP] Initialized 1,000 Bots ($1.00 Billion Capital) on %d CPU Domains.\n%!" num_domains;
+  Printf.printf "[META-OVERSEER] Master Overseer Cognitive Core Online.\n";
+  Printf.printf "  └─ Adaptive Punishment Severity: %.2fx | Reward Generosity: %.2fx\n\n%!"
+    overseer.punishment_severity overseer.reward_generosity;
 
   let ticks = [
     (65420.00, 65420.50, 150.0);
@@ -214,44 +282,37 @@ let () =
     let start_t = Unix.gettimeofday () in
 
     Task.run pool (fun () ->
-      step_swarm pool swarm bid ask vol !prior_price
+      step_swarm pool swarm overseer bid ask vol !prior_price
     );
     let elapsed_ms = (Unix.gettimeofday () -. start_t) *. 1000.0 in
+
+    (* Overseer evaluates whole swarm and updates its master lessons *)
+    overseer_audit_and_learn overseer swarm;
 
     let current_total_capital = Array.fold_left (fun acc b -> acc +. b.capital) 0.0 swarm in
     let swarm_net_pnl = current_total_capital -. total_swarm_capital in
 
-    Printf.printf "[CYCLE #%d] Price: $%.2f | Cycle Processed in: %.2f ms\n%!" (cycle + 1) current_mid elapsed_ms;
-    Printf.printf "  ├─ Swarm Total AUM : $%.2f (Net P&L: %+.2f)\n%!" current_total_capital swarm_net_pnl;
-
-    (* Sample Bot Inspect across different strategies and markets *)
-    let b1 = swarm.(10) in  (* Crypto / Safe *)
-    let b2 = swarm.(142) in (* Indian NSE / Aggressive *)
-    let b3 = swarm.(505) in (* US Stocks / Balanced *)
-    Printf.printf "  ├─ Bot #010 [%s | %s] Cap: $%.2f | Lev: %.1fx | PnL: %+.2f\n%!"
-      (market_to_string b1.target_market) (persona_to_string b1.risk_style) b1.capital b1.leverage b1.lifetime_profit;
-    Printf.printf "  ├─ Bot #142 [%s | %s] Cap: $%.2f | Lev: %.1fx | PnL: %+.2f\n%!"
-      (market_to_string b2.target_market) (persona_to_string b2.risk_style) b2.capital b2.leverage b2.lifetime_profit;
-    Printf.printf "  └─ Bot #505 [%s | %s] Cap: $%.2f | Lev: %.1fx | PnL: %+.2f\n\n%!"
-      (market_to_string b3.target_market) (persona_to_string b3.risk_style) b3.capital b3.leverage b3.lifetime_profit;
+    Printf.printf "[CYCLE #%d] BTC: $%.2f | Cycle Processed in: %.2f ms\n%!" (cycle + 1) current_mid elapsed_ms;
+    Printf.printf "  ├─ Swarm Total AUM      : $%.2f (Net P&L: %+.2f)\n%!" current_total_capital swarm_net_pnl;
+    Printf.printf "  ├─ Overseer Experience  : %d Total Lessons Learned from 1,000 Bots\n%!" overseer.aggregate_lessons_learned;
+    Printf.printf "  ├─ Overseer Policy State: Punishment: %.2fx | Reward Bonus: %.2fx\n%!"
+      overseer.punishment_severity overseer.reward_generosity;
+    Printf.printf "  └─ Market Regime Weights: [Crypto: %.2fx | US: %.2fx | NSE: %.2fx | FX: %.2fx | MM: %.2fx]\n\n%!"
+      overseer.market_regime_weights.(0) overseer.market_regime_weights.(1)
+      overseer.market_regime_weights.(2) overseer.market_regime_weights.(3)
+      overseer.market_regime_weights.(4);
 
     prior_price := current_mid;
   ) ticks;
 
   Printf.printf "========================================================================\n";
-  Printf.printf "                 SWARM ASSET ALLOCATION & LEADERBOARD                   \n";
+  Printf.printf "              OVERSEER BRAIN GLOBAL SUMMARY & VERDICT                  \n";
   Printf.printf "========================================================================\n";
-  
-  let sorted_bots = Array.copy swarm in
-  Array.sort (fun a b -> compare b.lifetime_profit a.lifetime_profit) sorted_bots;
-
-  Printf.printf "TOP 3 ALPHA CHAMPIONS (Highest Capital Reward):\n";
-  for i = 0 to 2 do
-    let b = sorted_bots.(i) in
-    Printf.printf "  #%d. Bot #%03d [%s | %s] Balance: $%.2f (Profit: %+.2f, WinRate: %.1f%%)\n"
-      (i + 1) b.id (market_to_string b.target_market) (persona_to_string b.risk_style)
-      b.capital b.lifetime_profit
-      (if b.total_trades > 0 then (float_of_int b.win_count /. float_of_int b.total_trades *. 100.0) else 0.0)
-  done;
+  Printf.printf "  Total Bot Decisions Analyzed : %d\n" overseer.aggregate_lessons_learned;
+  Printf.printf "  Overseer Adaptive Discipline : %s (Severity: %.2fx)\n"
+    (if overseer.punishment_severity > 1.2 then "Strict Quarantine Mode" else "Growth Encouragement Mode")
+    overseer.punishment_severity;
+  Printf.printf "  Systemic Tail-Risk Memory    : $%.2f peak drawdown observed\n" overseer.systemic_drawdown_memory;
+  Printf.printf "========================================================================\n\n";
 
   Task.teardown_pool pool
