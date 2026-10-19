@@ -2,15 +2,15 @@
 
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 use tokio::time;
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 use futures_util::{StreamExt, SinkExt};
 use crossbeam::channel::Sender;
 
-use crate::market_packet_capnp::market_packet;
+use crate::market_packet_capnp::{market_packet, AssetClass};
 use capnp::message::Builder;
-use capnp::serialize::write_message;
 
 /// Represents a normalized market tick to be sent across the system.
 #[derive(Debug, Clone)]
@@ -21,7 +21,7 @@ pub struct MarketTick {
     pub bid_price: f64,
     pub ask_price: f64,
     pub volume: f64,
-    pub asset_class: market_packet::AssetClass,
+    pub asset_class: AssetClass,
 }
 
 impl From<MarketTick> for Builder<capnp::message::HeapAllocator> {
@@ -44,13 +44,17 @@ impl From<MarketTick> for Builder<capnp::message::HeapAllocator> {
 /// Asynchronous feed runner for a single WebSocket endpoint.
 async fn run_websocket_feed(url: String, tx: Sender<MarketTick>) -> anyhow::Result<()> {
     let (ws_stream, _) = connect_async(&url).await?;
-    let (mut write, mut read) = ws_stream.split();
-    // Ping keep‑alive loop
+    let (write, mut read) = ws_stream.split();
+    let write = Arc::new(Mutex::new(write));
+
+    // Ping keep‑alive loop with shared thread-safe writer
+    let write_ping = Arc::clone(&write);
     let ping_handle: JoinHandle<()> = tokio::spawn(async move {
         let mut interval = time::interval(Duration::from_secs(30));
         loop {
             interval.tick().await;
-            if write.send(Message::Ping(vec![])).await.is_err() {
+            let mut lock = write_ping.lock().await;
+            if lock.send(Message::Ping(vec![].into())).await.is_err() {
                 break;
             }
         }
@@ -59,9 +63,7 @@ async fn run_websocket_feed(url: String, tx: Sender<MarketTick>) -> anyhow::Resu
     while let Some(msg) = read.next().await {
         match msg? {
             Message::Text(txt) => {
-                // Parse incoming JSON tick. Real implementation would be feed‑specific.
                 if let Ok(tick) = serde_json::from_str::<serde_json::Value>(&txt) {
-                    // Extract fields with graceful fallback.
                     let market_tick = MarketTick {
                         id: tick["id"].as_u64().unwrap_or_default(),
                         symbol: tick["symbol"].as_str().unwrap_or_default().to_string(),
@@ -70,47 +72,41 @@ async fn run_websocket_feed(url: String, tx: Sender<MarketTick>) -> anyhow::Resu
                         ask_price: tick["ask"].as_f64().unwrap_or_default(),
                         volume: tick["vol"].as_f64().unwrap_or_default(),
                         asset_class: match tick["class"].as_str().unwrap_or("CRYPTO") {
-                            "CRYPTO" => market_packet::AssetClass::Crypto,
-                            "FOREX" => market_packet::AssetClass::Forex,
-                            "COMMODITY" => market_packet::AssetClass::Commodity,
-                            "EQUITY" => market_packet::AssetClass::Equity,
-                            _ => market_packet::AssetClass::Crypto,
+                            "CRYPTO" => AssetClass::Crypto,
+                            "FOREX" => AssetClass::Forex,
+                            "COMMODITY" => AssetClass::Commodity,
+                            "EQUITY" => AssetClass::Equity,
+                            _ => AssetClass::Crypto,
                         },
                     };
-                    // Zero‑copy send via crossbeam channel (supports lock‑free multi‑producer).
                     let _ = tx.send(market_tick);
                 }
             }
             Message::Binary(_) => { /* ignore binary frames */ }
             Message::Ping(p) => {
-                let _ = write.send(Message::Pong(p)).await;
+                let mut lock = write.lock().await;
+                let _ = lock.send(Message::Pong(p)).await;
             }
             Message::Close(_) => break,
             _ => {}
         }
     }
-    // Ensure ping task stops.
     ping_handle.abort();
     Ok(())
 }
 
 /// Manages multiple feed runners.
 pub struct FeedManager {
-    /// Vector of join handles for graceful shutdown.
     handles: Vec<JoinHandle<anyhow::Result<()>>>,
-    /// Shared sender for market ticks.
     pub sender: Sender<MarketTick>,
 }
 
 impl FeedManager {
-    /// Creates a new manager with a bounded channel (capacity = 100_000).
     pub fn new() -> Self {
-        // Crossbeam bounded channel provides lock‑free MPMC semantics.
         let (tx, _rx) = crossbeam::channel::bounded::<MarketTick>(100_000);
         FeedManager { handles: Vec::new(), sender: tx }
     }
 
-    /// Spawns a feed task for each WebSocket URL.
     pub fn add_feed(&mut self, url: &str) {
         let tx = self.sender.clone();
         let url_string = url.to_string();
@@ -118,7 +114,6 @@ impl FeedManager {
         self.handles.push(handle);
     }
 
-    /// Await termination of all feeds (e.g., during shutdown).
     pub async fn shutdown(self) {
         for handle in self.handles {
             let _ = handle.await;
@@ -126,7 +121,12 @@ impl FeedManager {
     }
 }
 
-// Public re‑export for downstream crates.
+impl Default for FeedManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub mod prelude {
     pub use super::{FeedManager, MarketTick};
 }

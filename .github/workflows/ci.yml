@@ -22,12 +22,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up OCaml 5.x
-        uses: ocaml/setup-ocaml@v2
-        with:
-          ocaml-version: "5.2.0"
-      - name: Build OCaml swarm
+      - name: Build OCaml swarm in container
         run: |
-          cd ocaml-brain
-          opam install -y dune domainslib
-          dune build
+          docker run --rm --user root -v ${{ github.workspace }}:/workspace -w /workspace/ocaml-brain ocaml/opam:ubuntu-24.04-ocaml-5.2 bash -c "
+            chown -R opam:opam /workspace
+            su opam -c 'opam install -y dune domainslib && eval \$(opam env) && dune build'
+          "

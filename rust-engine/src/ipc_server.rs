@@ -2,7 +2,7 @@
 
 use std::path::Path;
 use std::os::unix::net::UnixListener;
-use std::io::{Write, Read};
+use std::io::Write;
 use crossbeam::channel::Receiver;
 use capnp::message::Builder;
 use capnp::serialize::write_message;
