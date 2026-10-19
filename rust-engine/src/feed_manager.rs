@@ -41,6 +41,57 @@ impl From<MarketTick> for Builder<capnp::message::HeapAllocator> {
     }
 }
 
+/// Parses both standard internal JSON and public exchange streams (e.g. Binance WebSocket).
+fn parse_tick_json(txt: &str) -> Option<MarketTick> {
+    let tick: serde_json::Value = serde_json::from_str(txt).ok()?;
+    
+    // Check if message is a standard Binance 24hr ticker or bookTicker stream
+    // Binance ticker fields: s (symbol), b (bid), a (ask), v (volume), E (event time)
+    if let (Some(symbol), Some(bid_str), Some(ask_str)) = (
+        tick["s"].as_str(),
+        tick["b"].as_str(),
+        tick["a"].as_str(),
+    ) {
+        let bid = bid_str.parse::<f64>().unwrap_or(0.0);
+        let ask = ask_str.parse::<f64>().unwrap_or(0.0);
+        let vol = tick["v"].as_str().and_then(|v| v.parse::<f64>().ok()).unwrap_or(1.0);
+        let ts = tick["E"].as_i64().unwrap_or_else(|| chrono::Utc::now().timestamp_millis());
+        
+        return Some(MarketTick {
+            id: ts as u64,
+            symbol: symbol.to_string(),
+            timestamp: ts,
+            bid_price: bid,
+            ask_price: ask,
+            volume: vol,
+            asset_class: AssetClass::Crypto,
+        });
+    }
+
+    // Generic fallback for custom / simulated feeds
+    let symbol = tick["symbol"].as_str().unwrap_or("BTCUSDT").to_string();
+    let bid = tick["bid"].as_f64().unwrap_or(65000.0);
+    let ask = tick["ask"].as_f64().unwrap_or(65000.5);
+    let vol = tick["vol"].as_f64().unwrap_or(0.5);
+    let ts = tick["ts"].as_i64().unwrap_or_else(|| chrono::Utc::now().timestamp_millis());
+
+    Some(MarketTick {
+        id: tick["id"].as_u64().unwrap_or(ts as u64),
+        symbol,
+        timestamp: ts,
+        bid_price: bid,
+        ask_price: ask,
+        volume: vol,
+        asset_class: match tick["class"].as_str().unwrap_or("CRYPTO") {
+            "CRYPTO" => AssetClass::Crypto,
+            "FOREX" => AssetClass::Forex,
+            "COMMODITY" => AssetClass::Commodity,
+            "EQUITY" => AssetClass::Equity,
+            _ => AssetClass::Crypto,
+        },
+    })
+}
+
 /// Asynchronous feed runner for a single WebSocket endpoint.
 async fn run_websocket_feed(url: String, tx: Sender<MarketTick>) -> anyhow::Result<()> {
     let (ws_stream, _) = connect_async(&url).await?;
@@ -63,22 +114,7 @@ async fn run_websocket_feed(url: String, tx: Sender<MarketTick>) -> anyhow::Resu
     while let Some(msg) = read.next().await {
         match msg? {
             Message::Text(txt) => {
-                if let Ok(tick) = serde_json::from_str::<serde_json::Value>(&txt) {
-                    let market_tick = MarketTick {
-                        id: tick["id"].as_u64().unwrap_or_default(),
-                        symbol: tick["symbol"].as_str().unwrap_or_default().to_string(),
-                        timestamp: tick["ts"].as_i64().unwrap_or_default(),
-                        bid_price: tick["bid"].as_f64().unwrap_or_default(),
-                        ask_price: tick["ask"].as_f64().unwrap_or_default(),
-                        volume: tick["vol"].as_f64().unwrap_or_default(),
-                        asset_class: match tick["class"].as_str().unwrap_or("CRYPTO") {
-                            "CRYPTO" => AssetClass::Crypto,
-                            "FOREX" => AssetClass::Forex,
-                            "COMMODITY" => AssetClass::Commodity,
-                            "EQUITY" => AssetClass::Equity,
-                            _ => AssetClass::Crypto,
-                        },
-                    };
+                if let Some(market_tick) = parse_tick_json(&txt) {
                     let _ = tx.send(market_tick);
                 }
             }

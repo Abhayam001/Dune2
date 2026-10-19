@@ -1,0 +1,19 @@
+name: Live Paper Trading Runner
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 * * * *' # Automatically runs every hour or manually on button click
+
+jobs:
+  run-paper-trading:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Cap'n Proto
+        run: sudo apt-get update && sudo apt-get install -y capnproto
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run 60-Second Live Paper Trading Session
+        run: |
+          cargo run --manifest-path rust-engine/Cargo.toml --bin paper_trade_runner

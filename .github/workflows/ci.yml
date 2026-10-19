@@ -25,6 +25,7 @@ jobs:
       - name: Build OCaml swarm in container
         run: |
           docker run --rm --user root -v ${{ github.workspace }}:/workspace -w /workspace/ocaml-brain ocaml/opam:ubuntu-24.04-ocaml-5.2 bash -c "
-            chown -R opam:opam /workspace
+            chown -R opam:opam /workspace/ocaml-brain
             su opam -c 'opam install -y dune domainslib && eval \$(opam env) && dune build'
+            chown -R $(id -u):$(id -g) /workspace
           "
