@@ -3,7 +3,6 @@
 use std::collections::HashMap;
 use std::time::Duration;
 use crossbeam::channel;
-use tokio::time::sleep;
 
 use rust_engine::feed_manager::{FeedManager, MarketTick};
 use rust_engine::gateway::{PaperBroker, RiskConfig, RiskFirewall, Order};
@@ -20,10 +19,8 @@ async fn main() -> anyhow::Result<()> {
 
     // 2. Setup channel and WebSocket feeds (Binance Live Public WebSockets)
     let (tx, rx) = channel::bounded::<MarketTick>(50_000);
-    let mut feed_manager = FeedManager {
-        handles: Vec::new(),
-        sender: tx,
-    };
+    let mut feed_manager = FeedManager::new();
+    feed_manager.sender = tx;
 
     println!("[FEED] Connecting to live public market feeds...");
     feed_manager.add_feed("wss://stream.binance.com:9443/ws/btcusdt@ticker");

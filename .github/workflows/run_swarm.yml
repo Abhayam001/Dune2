@@ -1,0 +1,17 @@
+name: Run 1,000-Bot Cognitive Swarm
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-swarm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute 1,000-Bot Brain & Watcher Council
+        run: |
+          docker run --rm --user root -v ${{ github.workspace }}:/workspace -w /workspace/ocaml-brain ocaml/opam:ubuntu-24.04-ocaml-5.2 bash -c "
+            chown -R opam:opam /workspace/ocaml-brain
+            su opam -c 'opam install -y dune domainslib && eval \$(opam env) && dune exec ./src/swarm_engine.exe'
+            chown -R \$(id -u):\$(id -g) /workspace
+          "
