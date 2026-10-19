@@ -25,7 +25,7 @@ jobs:
       - name: Set up OCaml 5.x
         uses: ocaml/setup-ocaml@v2
         with:
-          ocaml-version: "5.2.0"
+          ocaml-compiler: "5.2.0"
       - name: Build OCaml swarm
         run: |
           cd ocaml-brain
