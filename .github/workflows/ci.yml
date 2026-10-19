@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  rust-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Cap'n Proto
+        run: sudo apt-get update && sudo apt-get install -y capnproto
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cargo Check
+        run: cargo check --manifest-path rust-engine/Cargo.toml
+
+  ocaml-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up OCaml 5.x
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-version: "5.2.0"
+      - name: Build OCaml swarm
+        run: |
+          cd ocaml-brain
+          opam install -y dune domainslib
+          dune build

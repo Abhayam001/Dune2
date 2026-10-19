@@ -1,0 +1,4 @@
+(executable
+ (name swarm_engine)
+ (public_name ocaml-brain)
+ (libraries domainslib unix))
